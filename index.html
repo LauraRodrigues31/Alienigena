@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercício do Alien</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style> body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } </style>
+</head>
+
+<body>
+    <script>
+        // o que acontece aqui? criando váriaveis para a largura e altura do jogo, para que podemos chamar depois no código
+        const larguraJogo = 700;
+        const alturaJogo = 850;
+
+        // o que essa parte faz? configura o jogo em phaser e chama as váiaveis de altura e largura
+        const config = {
+            type: Phaser.AUTO, // Tipo de renderização automática
+            width: larguraJogo, // Largura do jogo
+            height: alturaJogo, // Altura do jogo
+
+            physics:{
+                default: 'arcade',
+                arcade:{
+                    gravity: {y: 300}, // gravidade no eixo Y
+                    debug: true // visualizar colisões
+                }
+            },
+
+            scene: {
+                preload: preload, // carregamento de recursos
+                create: create, // criação de elementos do jogo
+                update: update // Atualização do estado do jogo
+            }
+        };
+
+        // o que acontece aqui? cria o game e associa ele ao phaser
+        const game = new Phaser.Game(config);
+
+        // criando variáveis
+        var alien
+        var plataforma;
+        var moeda;
+        var pontuacao = 0;
+        var placar;
+        var coracao;
+
+        var lista = {fogo: null}; // lista pra armazenar a sprite do foguinho
+        
+        function preload() {
+            this.load.image('background', 'assets/bg.png');
+
+            // carregue a imagem do alienígena
+            this.load.image('player', 'assets/alienigena.png');
+
+            // carregue a imagem do fogo
+            this.load.image('turbo_nave', 'assets/turbo.png');
+
+            // carregue a imagem da plataforma
+            this.load.image('plataforma_tijolo', 'assets/tijolos.png');
+
+            // carrega a imagem da moeda
+            this.load.image('moeda', 'assets/moeda.png');
+
+            // carrega a imagem de coração
+            this.load.image('coracao', 'assets/coracao.png');
+        }
+
+        function create() {
+            // o que acontece aqui? adicionando a imagem de fundo
+            this.add.image(larguraJogo/2, alturaJogo/2, 'background');
+            
+            //adicionando o foguinho turbo
+            lista.fogo = this.add.sprite(0, 0, 'turbo_nave'); // adicionando a sprite de foguinho
+            lista.fogo.setVisible(false);// iniciar com o foguinho invisível
+
+            // crie o alienígena
+            alien = this.physics.add.sprite(larguraJogo/2, 0, 'player') // sprite do alienígena
+            alien.setCollideWorldBounds(true); // ativar os limites físicos
+
+            // para acessar as teclas de cima, baido, direita e esquerda
+            teclado = this.input.keyboard.createCursorKeys();
+
+            // adicionando a plataforma
+            plataforma = this.physics.add.staticImage(larguraJogo/2, alturaJogo/2, 'plataforma_tijolo'); // adicionando a plataforma e sua posição
+            this.physics.add.collider(alien, plataforma); // colisão entre aliengina e plataforma
+            
+            // adicionando o novo obstaculo: coração
+            coracao = this.physics.add.staticImage(200,550 , 'coracao'); // sprite coração
+            this.physics.add.collider(alien, coracao); // colisão entre o alien e coração
+
+
+            // adicioanando moeda que quica
+            moeda = this.physics.add.sprite(larguraJogo/3, 0, 'moeda'); // sprite moedas
+            moeda.setBounce(0.7); // movimento que a moeda quica
+            this.physics.add.collider(moeda, plataforma); // colisão entre moeda e plataforma
+            moeda.setCollideWorldBounds (true); //moeda dentro dos limites
+
+            // adicionando placar 
+            placar = this.add.text(50, 50, 'Moedas:' + pontuacao, {fontSize:'45px', fill:'#495613'});
+
+            // quando o alien encostar na moeda:
+            this.physics.add.overlap(alien, moeda, function (){
+                moeda.setVisible(false); //moeda invisivel 
+                var posicaoMoeda_Y = Phaser.Math.RND.between(50, 650); // Define uma nova posição para a moeda
+                moeda.setPosition(posicaoMoeda_Y, 100);// define a nova posição da moeda
+                pontuacao += 1; // incrementa a pontuação
+                placar.setText('Moedas:' + pontuacao); // atualiza o texto do placar
+                moeda.setVisible(true); // torna a moeda vísivel novamente
+
+            })
+        }
+        // função para atualizar o estado do jogo
+        function update() {
+             //movimento para a esquerda
+            if (teclado.left.isDown){
+                alien.setVelocityX(-150);
+            }
+            // movimento para a direita
+            else if(teclado.right.isDown){
+                alien.setVelocityX(150);
+            }
+            // sem movimento horizontal [x = 0]
+            else{
+                alien.setVelocityX(0);
+            }
+            // movimento para cima
+            if (teclado.up.isDown){
+                alien.setVelocityY(-150);
+                ativarTurbo();
+            }
+            // movimento para baixo [gravidade em y]
+            else {
+                alien.setVelocityY(150);// ação da gravidade no jogo
+                semTurbo();
+            }
+
+            lista.fogo.setPosition(alien.x, alien.y + alien.height/2); // foguinho acompanha o alien
+
+            function ativarTurbo(){ // Função para ativar o modo turbo, tornando o foguinho visível
+                lista.fogo.setVisible(true);
+            }
+
+            function semTurbo(){ // // Função para desativar o modo turbo, tornando o foguinho invisível
+                lista.fogo.setVisible(false);
+            }
+
+        }
+    </script>
+</body>
+</html>
